@@ -12,9 +12,9 @@ def fopen(filename, mode='r'):
 
 
 class TextIterator:
-	"""Simple Bitext iterator."""
+	"""Simple text iterator."""
 	def __init__(self, source, source_dict,
-				 batch_size=128, #maxlen=100,
+				 batch_size=128, #maxlen=100, maxlen is currently deprecated unless experimental data shows it is necessary
 				 n_words_source=-1, shuffle = False, k = 100):
 		self.source = fopen(source, 'r')
 		self.source_name = source
@@ -70,9 +70,11 @@ class TextIterator:
 		source = []
 		target = []
 
-		# fill buffer, if it's empty
+		
+		# if more entries in one buffer, except -- an IO error has occurred or the data was incorrect.
 		assert len(self.source_buffer) == len(self.target_buffer), 'Buffer size mismatch!'
-
+		
+		# fill buffer, if it's empty
 		if len(self.source_buffer) == 0:
 			for k_ in xrange(self.k):
 				ss = self.source.readline()
@@ -88,7 +90,7 @@ class TextIterator:
 				self.source_buffer.append(ss.strip().split())
 				self.target_buffer.append(tt.strip().split())
 
-			# sort by source buffer
+			# sort source buffer on length
 			slen = numpy.array([len(t) for t in self.source_buffer])
 			sidx = slen.argsort()
 
@@ -130,6 +132,7 @@ class TextIterator:
 
 				if len(source) >= self.batch_size:
 					break
+					
 		except IOError:
 			self.end_of_data = True
 
