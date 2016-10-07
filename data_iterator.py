@@ -15,7 +15,7 @@ class TextIterator:
 	"""Simple Bitext iterator."""
 	def __init__(self, source, source_dict,
 				 batch_size=128, #maxlen=100,
-				 n_words_source=-1, shuffle = False, k = 20):
+				 n_words_source=-1, shuffle = False, k = 100):
 		self.source = fopen(source, 'r')
 		self.source_name = source
 		with open(source_dict, 'r') as f:

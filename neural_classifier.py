@@ -31,12 +31,9 @@ from keras.layers.wrappers import TimeDistributed, Bidirectional
 from keras.layers.core import Dropout, Activation, Flatten, Masking, TimeDistributedDense
 from keras.layers.recurrent import LSTM
 from keras.layers.pooling import GlobalMaxPooling1D
-from keras.utils import np_utils, generic_utils
 from keras.optimizers import Nadam
 from keras import backend as K
 from keras.preprocessing.sequence import pad_sequences
-
-from seya.layers.ntm import NeuralTuringMachine as NTM
 
 
 #From NMT code
@@ -64,6 +61,19 @@ def prepare_data(seqs_x, seqs_y, n_words=30000, maxlen = None):
 		x[idx, :lengths_x[idx]] = s_x
 		
 	return x, numpy.asarray(seqs_y)
+	
+def get_class_weights(inputfile):
+
+	total = 0
+	okay = 0
+	bad = 0
+	with open(inputfile, "rb") as f:
+		for example in f:
+			if example.strip().split("\t")[-1] == "removecomment":
+				bad += 1
+			else:
+				okay += 1
+	return {0 : 1, 1 : okay/bad}
 
 def build_model(dim=1024, word_dim = 512, vocab_size = 30000, maxlen = None, use_dropout = False):
 	model = Sequential()
@@ -98,9 +108,9 @@ def train(word_dim=512,  # word vector dimensionality
 		  #maxlen=64,  # maximum length of the description
 		  batch_size=32,
 		  valid_batch_size=32,
-		  savedir="E:/Users/Max/NeuralNetworkModels/large_wiki_NTM_dropout/",
-		  validFreq=100,
-		  saveFreq=2500,   # save the parameters after every saveFreq updates
+		  savedir="./",
+		  validFreq=2500,
+		  saveFreq=25000,   # save the parameters after every saveFreq updates
 		  sampleFreq=1000,   # generate some samples after every sampleFreq
 		  dataset="./reddit_comment_training.tsv",
 		  valid_dataset="./reddit_comment_valid.tsv",
@@ -118,9 +128,11 @@ def train(word_dim=512,  # word vector dimensionality
 		worddict_r[vv] = kk
 
 	# The generator to sample examples from
+	
+	class_weights = get_class_weights(dataset)
+	print class_weights
 	train = TextIterator(dataset, dictionary, n_words_source=vocab_size, batch_size=batch_size, shuffle = True)
 	valid = TextIterator(valid_dataset, dictionary, n_words_source=vocab_size, batch_size=batch_size, shuffle = False)
-	
 	
 	print "Compiling training functions"
 	# The model (1-layer Neural Turing Machine)
@@ -158,7 +170,7 @@ def train(word_dim=512,  # word vector dimensionality
 				uidx -= 1
 				continue
 				
-			score = model.train_on_batch(x, y)
+			score = model.train_on_batch(x, y)#, class_weight = class_weights)
 			scores.append(score)
 			
 			# check for bad numbers; if one is encountered, just reload the model from the most recent save.  Dropout's randomness should ensure that this will
