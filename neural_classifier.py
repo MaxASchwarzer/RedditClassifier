@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-#from __future__ import print_function
 
 import theano
 import theano.tensor as T
@@ -9,18 +8,14 @@ import os
 import cPickle as pkl
 import copy
 import time
-
+import logging
+import numpy as np
 
 from os import listdir
 from os.path import isfile, join
-
 from theano import tensor, function
-
 from data_iterator import TextIterator
 
-
-import logging
-import numpy as np
 np.random.seed(12345)
 import matplotlib.pyplot as plt
 
@@ -94,16 +89,10 @@ def build_model(dim=1024, word_dim = 512, vocab_size = 30000, maxlen = None, use
 	
 def train(word_dim=512,  # word vector dimensionality
 		  dim=1024,  # the number of LSTM units
-		  encoder='gru',
-		  decoder='gru_cond',
 		  patience=10,  # early stopping patience
 		  max_epochs=5000,
 		  finish_after=10000000,  # finish after this many updates
 		  dispFreq=100,
-		  decay_c=0.,  # L2 regularization penalty
-		  alpha_c=0.,  # alignment regularization
-		  clip_c=-1.,  # gradient clipping threshold
-		  lrate=0.01,  # learning rate
 		  vocab_size=30000,  # vocabulary size
 		  #maxlen=64,  # maximum length of the description
 		  batch_size=32,
@@ -219,42 +208,6 @@ def train(word_dim=512,  # word vector dimensionality
 				model.save_weights(saveto_uidx)
 				print 'Done'
 
-
-			# generate some samples with the model and display them
-			# if numpy.mod(uidx, sampleFreq) == 0:
-				# num_samples = numpy.minimum(5, x.shape[0])
-				# sample_in = x[:num_samples]
-				# sample_out = model.predict_classes(sample_in, batch_size=num_samples)
-				# for index, sample in enumerate(sample_out):
-				
-					# print 'Source ', index, ': ',
-					# for vv in x[index, :]:
-						# if vv == 0:
-							# break
-						# if vv in worddict_r:
-							# print worddict_r[vv],
-						# else:
-							# print 'UNK',
-					# print
-					# print 'Truth ', index, ' : ',
-					# for vv in y[index, :, 0]:
-						# if vv == 0:
-							# break
-						# if vv in worddict_r:
-							# print worddict_r[vv],
-						# else:
-							# print 'UNK',
-					# print
-					# print 'Sample ', index, ': ',
-					# for vv in sample:
-						# if vv == 0:
-							# break
-						# if vv in worddict_r:
-							# print worddict_r[vv],
-						# else:
-							# print 'UNK',
-					# print
-
 			# validate model on validation set and early stop if necessary
 			if numpy.mod(uidx, validFreq) == 0:
 				
@@ -290,7 +243,7 @@ def train(word_dim=512,  # word vector dimensionality
 	valid_err = valid_errs.mean()
 	print 'Valid ', valid_err
 
-	model.save(savedir + "final.h5")
+	model.save_weights(savedir + "final.h5")
 
 	return valid_err
 
