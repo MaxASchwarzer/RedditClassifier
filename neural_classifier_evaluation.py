@@ -169,7 +169,7 @@ def test(word_dim=256,  # word vector dimensionality
 		x, y = prepare_data(x, y, maxlen = maxlen)
 		predictions = model.predict(x)
 		for pred, truth in zip(predictions, y):
-			if pred == truth:
+			if pred[0] == truth[0]:
 				num_correct += 1
 			else:
 				num_incorrect += 1
