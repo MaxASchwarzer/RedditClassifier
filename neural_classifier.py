@@ -64,7 +64,7 @@ def get_class_weights(inputfile):
 	class2 = 0
 	with open(inputfile, "rb") as f:
 		for example in f:
-			if example.strip().split("\t")[-1] == "removecomment":
+			if "removecomment" in example.strip().split("\t")[-1]:
 				class2 += 1
 			else:
 				class1 += 1
@@ -135,6 +135,7 @@ def train(word_dim=256,  # word vector dimensionality
 
 
 	class_weights = get_class_weights(dataset)
+	print class_weights
 	# The dataset this model was built for is heavily unbalanced, so we generate weightings to equalize the importance of the classes.
 	train = TextIterator(dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False)
 	valid = TextIterator(valid_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False)
