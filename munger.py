@@ -27,7 +27,6 @@ del df3["postid"]
 df3 = df3.fillna("no_action")
 
 # tokenize and lowercase the data
-tokenizer = WordPunctTokenizer()
 lowercase = lambda x: (" ").join(tokenizer.tokenize(x.lower()))
 df3 = df3.applymap(lowercase)
 
