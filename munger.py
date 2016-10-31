@@ -1,5 +1,5 @@
 """ This script processes the Reddit data from the original format, removes extraneous information, and makes an 80-10-10 train/valid/test split. """
-
+from nltk.tokenize import WordPunctTokenizer
 import pandas as pd
 import numpy as np
 
@@ -27,6 +27,7 @@ del df3["postid"]
 df3 = df3.fillna("no_action")
 
 # tokenize and lowercase the data
+tokenizer = WordPunctTokenizer()
 lowercase = lambda x: (" ").join(tokenizer.tokenize(x.lower()))
 df3 = df3.applymap(lowercase)
 
