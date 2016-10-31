@@ -167,7 +167,7 @@ def test(word_dim=256,  # word vector dimensionality
 	num_incorrect = 0
 	for x, y in test:
 		x, y = prepare_data(x, y, maxlen = maxlen)
-		predictions = model.predict_on_batch(x, y, batch_size = len(x))
+		predictions = model.predict(x)
 		for pred, truth in zip(predictions, y):
 			if pred == truth:
 				num_correct += 1
