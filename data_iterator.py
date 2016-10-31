@@ -1,8 +1,12 @@
+
 import numpy
 import random
+import json
 
 import cPickle as pkl
 import gzip
+from nltk.tokenize import WordPunctTokenizer
+
 
 
 def fopen(filename, mode='r'):
@@ -12,16 +16,22 @@ def fopen(filename, mode='r'):
 
 
 class TextIterator:
-	"""Simple text iterator."""
-	def __init__(self, source, source_dict,
+	"""Simple text iterator.  IMPORTANT: do not set shuffle=True if the dataset is too large to load into memory"""
+	def __init__(self, source, source_dict, sr_dict,
 				 batch_size=128, #maxlen=100, maxlen is currently deprecated unless experimental data shows it is necessary
-				 n_words_source=-1, shuffle = False, k = 100):
+				 n_words_source=-1, n_subreddits = 1000, shuffle = False, k = 100):
 		self.source = fopen(source, 'r')
 		self.source_name = source
-		with open(source_dict, 'r') as f:
+		self.tokenizer = WordPunctTokenizer()
+		with open(source_dict, 'rb') as f:
 			self.source_dict = pkl.load(f)
 		
+		with open(sr_dict, "rb") as f:
+			self.sr_dict = pkl.load(f)
 		
+		for key in self.source_dict.keys():
+			if self.source_dict[key] > n_words_source and n_words_source > 0:
+				del self.source_dict[key]
 		self.shuffling = shuffle
 		if self.shuffling:
 			self.shuffle()
@@ -31,6 +41,7 @@ class TextIterator:
 		#self.maxlen = maxlen
 
 		self.n_words_source = n_words_source
+		self.n_subreddits = n_subreddits
 
 		self.source_buffer = []
 		self.target_buffer = []
@@ -80,18 +91,17 @@ class TextIterator:
 				ss = self.source.readline()
 				if ss == "":
 					break
-				ss = ss.split("\t")
-				tt = ss[1]
-				ss = ss[0]
 				
-				if tt == "":
-					break
+				ss = ss.split("\t")
+				sssubreddit = ss[0]
+				sstext = ss[1]
+				tt = ss[2]
 
-				self.source_buffer.append(ss.strip().split())
+				self.source_buffer.append([self.tokenizer.tokenize(sstext), sssubreddit])
 				self.target_buffer.append(tt.strip().split())
 
 			# sort source buffer on length
-			slen = numpy.array([len(t) for t in self.source_buffer])
+			slen = numpy.array([len(t[0]) for t in self.source_buffer])
 			sidx = slen.argsort()
 
 			_sbuf = [self.source_buffer[i] for i in sidx]
@@ -110,24 +120,30 @@ class TextIterator:
 			# actual work here
 			while True:
 
-				# read from source file and map to word index
+				# read from source buffer and map to word index
 				try:
 					ss = self.source_buffer.pop()
+					tt = self.target_buffer.pop()
 				except IndexError:
 					break
-				ss = [self.source_dict[w] if w in self.source_dict else 1
-					  for w in ss]
+				sstext = [self.source_dict[w] if w in self.source_dict else 1
+					  for w in ss[0]]
+				if ss[1] in self.sr_dict:
+					sssubreddit = self.sr_dict[ss[1]]
+				else:
+					sssubreddit = 0
 				if self.n_words_source > 0:
-					ss = [w if w < self.n_words_source else 1 for w in ss]
+					sstext = [w if w < self.n_words_source else 0 for w in sstext]
 
-				# read from source file and map to word index
-				tt = self.target_buffer.pop()
-				if tt == ["removecomment"]:
+				if self.n_subreddits > 0 and (sssubreddit + 1) > self.n_subreddits:
+					sssubreddit = 0
+					
+				if tt == "removecomment":
 					tt = [0., 1.]
 				else:
 					tt = [1., 0.]
 				
-				source.append(ss)
+				source.append([sstext, sssubreddit])
 				target.append(tt)
 
 				if len(source) >= self.batch_size:

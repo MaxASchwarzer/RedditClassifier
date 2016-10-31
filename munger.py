@@ -2,7 +2,6 @@
 
 import pandas as pd
 import numpy as np
-from nltk.tokenize import WordPunctTokenizer
 
 
 df1 = pd.read_csv("./comments.tsv", "\t", header = None, names = ["uid1", "subreddit", "uid2", "postid", "parentid", "threadid", "text"])
@@ -11,7 +10,6 @@ df2 = pd.read_csv("./actions.tsv", "\t", header = None, names = ["action", "time
 # delete unused data
 del df1 ["uid1"]
 del df1 ["uid2"]
-del df1 ["subreddit"]
 del df1 ["parentid"]
 del df1 ["threadid"]
 del df2 ["timestamp"]
