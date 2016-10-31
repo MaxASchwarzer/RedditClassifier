@@ -8,7 +8,7 @@ import time
 from os import listdir
 from os.path import isfile, join
 
-from data_iterator import TextIterator
+from postmunge import PostmungedTextIterator
 
 from keras.models import Graph, Sequential, load_model, Model
 from keras.layers import Embedding, Dense, MaxoutDense, Input, merge, MaxoutDense, Flatten
@@ -101,8 +101,8 @@ def build_model(dim=256, word_dim = 256, subreddit_dim = 64, vocab_size = 30000,
 	model = LeakyReLU(0.2)(model)
 	if use_dropout:
 		model = Dropout(0.5)(model)
-	modelout = MaxoutDense(2, nb_feature = 5)(model)
-	modelout = Activation("softmax")(modelout)
+	modelout = MaxoutDense(1, nb_feature = 5)(model)
+	modelout = Activation("sigmoid")(modelout)
 	model = Model(input = [input_text, input_subreddit], output = [modelout])
 	model.compile(loss='binary_crossentropy',
 				  optimizer='adam')
@@ -110,14 +110,14 @@ def build_model(dim=256, word_dim = 256, subreddit_dim = 64, vocab_size = 30000,
 	return model
 	
 	
-def train(word_dim=256,  # word vector dimensionality
-		  dim=768,  # the number of LSTM units
+def train(word_dim=512,  # word vector dimensionality
+		  dim=1024,  # the number of LSTM units
 		  patience=10,  # early stopping patience
 		  max_epochs=5000,
 		  finish_after=10000000,  # finish after this many updates
 		  dispFreq=100,
 		  vocab_size=30000,  # vocabulary size
-		  n_subreddits = 512, # number of subreddits to track specifically
+		  n_subreddits = 8, # number of subreddits to track specifically
 		  subreddit_dim = 64, # subreddit vector dimensionality
 		  maxlen=200,  # maximum length of the description
 		  batch_size=64,
@@ -137,8 +137,8 @@ def train(word_dim=256,  # word vector dimensionality
 	class_weights = get_class_weights(dataset)
 	print class_weights
 	# The dataset this model was built for is heavily unbalanced, so we generate weightings to equalize the importance of the classes.
-	train = TextIterator(dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False)
-	valid = TextIterator(valid_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False)
+	train = PostmungedTextIterator(dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False)
+	valid = PostmungedTextIterator(valid_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False)
 	
 	print "Building the model"
 	model = build_model(dim = dim, word_dim  = word_dim, vocab_size = vocab_size, n_subreddits = n_subreddits, subreddit_dim = subreddit_dim, use_dropout = use_dropout)
