@@ -138,7 +138,7 @@ class TextIterator:
 				if self.n_subreddits > 0 and (sssubreddit + 1) > self.n_subreddits:
 					sssubreddit = 0
 					
-				if tt == "removecomment":
+				if "removecomment" in tt:
 					tt = [0., 1.]
 				else:
 					tt = [1., 0.]
