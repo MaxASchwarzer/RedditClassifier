@@ -23,7 +23,7 @@ from keras.layers.advanced_activations import PReLU, LeakyReLU
 # TODO: Add evaluation on the testing set.
 # WARNING: This code will barely run on CPU.  GPU use advised.
 
-def prepare_data(seqs_x, seqs_y, maxlen = None):
+def prepare_data(seqs_x, seqs_y, maxlen = None, class_weights = [1, 1]):
 	# x: a list of sentences
 	lengths_x = [len(s[0]) for s in seqs_x]
 	
@@ -76,7 +76,7 @@ def build_model(dim=256, word_dim = 256, subreddit_dim = 64, vocab_size = 30000,
 	
 	input_text = Input(shape=(None,), dtype='int32', name='text_input')
 	model = Embedding(vocab_size, word_dim, mask_zero = False)(input_text)
-	model = Bidirectional(LSTM(dim, return_sequences = True), merge_mode = "concat")(model)
+	model = Bidirectional(LSTM(2*dim, return_sequences = True), merge_mode = "concat")(model)
 	model = LeakyReLU(0.2)(model)
 	if use_dropout:
 		model = Dropout(0.2)(model)
@@ -120,22 +120,23 @@ def train(word_dim=512,  # word vector dimensionality
 		  n_subreddits = 8, # number of subreddits to track specifically
 		  subreddit_dim = 64, # subreddit vector dimensionality
 		  maxlen=200,  # maximum length of the description
-		  batch_size=64,
-		  valid_batch_size=64,
+		  batch_size=256,
+		  valid_batch_size=256,
 		  savedir="./",
 		  validFreq=100000,
 		  saveFreq=25000,   # save the parameters after every saveFreq updates
 		  dataset="./reddit_comment_training.tsv",
+		  test_dataset = "./reddit_comment_testing.tsv",
 		  valid_dataset="./reddit_comment_valid.tsv",
 		  dictionary="./reddit_comment_training.tsv_worddict.pkl",
 		  sr_dictionary="./reddit_comment_training.tsv_srdict.pkl",
 		  use_dropout=True,
-		  reload=False,
+		  reload=True,
 		  overwrite=False):
 
 
-	class_weights = get_class_weights(dataset)
-	print class_weights
+	#class_weights = get_class_weights(dataset)
+	#print class_weights
 	# The dataset this model was built for is heavily unbalanced, so we generate weightings to equalize the importance of the classes.
 	train = PostmungedTextIterator(dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False)
 	valid = PostmungedTextIterator(valid_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False)
@@ -179,7 +180,7 @@ def train(word_dim=512,  # word vector dimensionality
 				uidx -= 1
 				continue
 				
-			score = model.train_on_batch(x, y, class_weight = class_weights)
+			score = model.train_on_batch(x, y)#, class_weight = class_weights)
 			scores.append(score)
 			
 			# check for bad numbers; if one is encountered, just reload the model from the most recent save.  Dropout's randomness should ensure that this will

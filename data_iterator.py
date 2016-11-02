@@ -8,7 +8,6 @@ import gzip
 from nltk.tokenize import WordPunctTokenizer
 
 
-
 def fopen(filename, mode='r'):
 	if filename.endswith('.gz'):
 		return gzip.open(filename, mode)
@@ -139,9 +138,9 @@ class TextIterator:
 					sssubreddit = 0
 					
 				if "removecomment" in tt:
-					tt = [0., 1.]
+					tt = 1
 				else:
-					tt = [1., 0.]
+					tt = 0
 				
 				source.append([sstext, sssubreddit])
 				target.append(tt)
