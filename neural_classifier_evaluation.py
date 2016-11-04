@@ -12,14 +12,16 @@ from postmunge import PostmungedTextIterator
 from neural_classifier import build_model
 
 from keras.models import Graph, Sequential, load_model, Model
-from keras.layers import Embedding, Dense, MaxoutDense, Input, merge, MaxoutDense, Flatten
-from keras.layers.wrappers import TimeDistributed, Bidirectional
-from keras.layers.core import Dropout, Activation
-from keras.layers.recurrent import LSTM
-from keras.layers.pooling import GlobalMaxPooling1D
-from keras.optimizers import Nadam
-from keras import backend as K
-from keras.layers.advanced_activations import PReLU, LeakyReLU
+# from keras.layers import Embedding, Dense, MaxoutDense, Input, merge, MaxoutDense, Flatten
+# from keras.layers.wrappers import TimeDistributed, Bidirectional
+# from keras.layers.core import Dropout, Activation
+# from keras.layers.recurrent import LSTM
+# from keras.layers.pooling import GlobalMaxPooling1D
+# from keras.optimizers import Nadam
+# from keras import backend as K
+# from keras.layers.advanced_activations import PReLU, LeakyReLU
+
+import matplotlib.pyplot as plt
 
 from sklearn.metrics import roc_curve, auc, precision_recall_curve
 
@@ -58,7 +60,6 @@ def generate_progress_graph(model_directory, valid_dataset, dictionary, sr_dicti
 		tl.set_color('b')
 
 	plt.savefig("iterations_progress " + model_directory.split("/")[-2] + ".png", bbox_inches='tight')
-	plt.show()
 
 
 

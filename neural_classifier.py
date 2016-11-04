@@ -76,15 +76,15 @@ def build_model(dim=256, word_dim = 256, subreddit_dim = 64, vocab_size = 30000,
 	
 	input_text = Input(shape=(None,), dtype='int32', name='text_input')
 	model = Embedding(vocab_size, word_dim, mask_zero = False)(input_text)
-	model = Bidirectional(LSTM(2*dim, return_sequences = True), merge_mode = "concat")(model)
+	model = Bidirectional(LSTM(dim, return_sequences = True), merge_mode = "concat")(model)
 	model = LeakyReLU(0.2)(model)
 	if use_dropout:
 		model = Dropout(0.2)(model)
-	model = LSTM(dim, return_sequences = True)(model)
+	model = Bidirectional(LSTM(dim, return_sequences = True), merge_mode = "concat")(model)
 	model = LeakyReLU(0.2)(model)
 	if use_dropout:
 		model = Dropout(0.2)(model)
-	model = LSTM(dim, return_sequences = False)(model)
+	model = GlobalMaxPooling1D()(model)
 	model = LeakyReLU(0.2)(model)
 	
 	input_subreddit = Input(shape=(1,), dtype='int32', name='subreddit_input')
@@ -110,15 +110,15 @@ def build_model(dim=256, word_dim = 256, subreddit_dim = 64, vocab_size = 30000,
 	return model
 	
 	
-def train(word_dim=512,  # word vector dimensionality
-		  dim=1024,  # the number of LSTM units
-		  patience=10,  # early stopping patience
+def train(word_dim=256,  # word vector dimensionality
+		  dim=512,  # the number of LSTM units
+		  patience=2,  # early stopping patience
 		  max_epochs=5000,
 		  finish_after=10000000,  # finish after this many updates
 		  dispFreq=100,
 		  vocab_size=30000,  # vocabulary size
 		  n_subreddits = 8, # number of subreddits to track specifically
-		  subreddit_dim = 64, # subreddit vector dimensionality
+		  subreddit_dim = 128, # subreddit vector dimensionality
 		  maxlen=200,  # maximum length of the description
 		  batch_size=256,
 		  valid_batch_size=256,
@@ -146,7 +146,7 @@ def train(word_dim=512,  # word vector dimensionality
 	print "Model built"
 	
 	# Initializaton
-	uidx = 1
+	uidx = 0
 	scores = []
 	history_errs = []
 	ud_start = time.time()
@@ -162,7 +162,7 @@ def train(word_dim=512,  # word vector dimensionality
 			
 		if os.path.isfile(most_recent_model[0]):
 			print "Loading from model", most_recent_model[0]
-			model.load_weights(most_recent_model[0])
+			model = keras.models.load_model(most_recent_model[0])
 			uidx = most_recent_model[1] + 1  #Adding one avoids repeating a validation error calculation for many reloads.
 		else:
 			print "Failed to load model -- no acceptable models found"
@@ -277,7 +277,7 @@ def train(word_dim=512,  # word vector dimensionality
 		valid_errs.append(v_err)
 	valid_err = valid_errs.mean()
 	print 'Valid ', valid_err
-	model.save_weights(savedir + "final.h5")
+	model.save(savedir + "final.h5")
 	return valid_err
 
 if __name__ == '__main__':
