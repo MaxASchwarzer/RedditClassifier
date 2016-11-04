@@ -21,8 +21,47 @@ from keras.optimizers import Nadam
 from keras import backend as K
 from keras.layers.advanced_activations import PReLU, LeakyReLU
 
+from sklearn.metrics import roc_curve, auc, precision_recall_curve
+
 # TODO: Add evaluation on the testing set.
 # WARNING: This code will barely run on CPU.  GPU use advised.
+
+def generate_progress_graph(model_directory, valid_dataset, dictionary, sr_dictionary, test_dataset):
+	modelfiles = [(join(model_directory, f), int(f.split(".")[1].replace("iter", ""))) for f in listdir(model_directory) if (isfile(join(model_directory, f)) and ("model" in str(f)) and (("npz" in str(f)) or ("h5" in str(f))) and (not "validout" in str(f)) and (not "testout" in str(f)) and (not ".pkl" in str(f)))]
+	modelfiles = sorted(modelfiles, key = lambda file: file[1])
+	print modelfiles
+	modelfiles, iters = zip(*modelfiles)
+	accs = []
+	precs = []
+	recs = []
+	
+	for model in modelfiles:
+		acc, prec, rec = test(modelfile = model, valid_dataset = valid_dataset, dictionary = dictionary, sr_dictionary = sr_dictionary, test_dataset = test_dataset)
+		acc.append(acc)
+		precs.append(prec)
+		recs.append(rec)
+		
+		
+	with open(join(model_directory, "_training_results.csv"), "wb") as f:
+		for line in zip(*[iter, acc, prec, rec]):
+			line = ",".join(map(str, line))
+			f.write(line + "\n")
+	fig, ax1 = plt.subplots()
+	t = np.asarray(iters)
+	ax1.plot(t, np.asarray(accs), 'b-', label="Accuracy")
+	ax1.plot(t, np.asarray(precs), 'g-', label="Precision")
+	ax1.plot(t, np.asarray(recs), 'k-', label="Recall")
+	ax1.set_xlabel('Number of Iterations')
+	# Make the y-axis label and tick labels match the line color.
+	ax1.set_ylabel('Percent score', color='b')
+	for tl in ax1.get_yticklabels():
+		tl.set_color('b')
+
+	plt.savefig("iterations_progress " + model_directory.split("/")[-2] + ".png", bbox_inches='tight')
+	plt.show()
+
+
+
 
 def prepare_data(seqs_x, seqs_y, maxlen = None):
 	# x: a list of sentences
@@ -58,58 +97,6 @@ def prepare_data(seqs_x, seqs_y, maxlen = None):
 		x_sr[idx] = s_x[1]
 	return [x_text, x_sr], seqs_y
 	
-def get_class_weights(inputfile):
-
-	total = 0
-	class1 = 0
-	class2 = 0
-	with open(inputfile, "rb") as f:
-		for example in f:
-			if "removecomment" in example.strip().split("\t")[-1]:
-				class2 += 1
-			else:
-				class1 += 1
-	return {0 : 1, 1 : class1/class2}
-	
-	
-# def build_model(dim=256, word_dim = 256, subreddit_dim = 64, vocab_size = 30000, n_subreddits = 1000, maxlen = None, use_dropout = False):
-	# """ This network structure is based on Recurrent Convolutional Neural Networks for Text Classification, Lai et al., 2015, """	
-	
-	# input_text = Input(shape=(None,), dtype='int32', name='text_input')
-	# model = Embedding(vocab_size, word_dim, mask_zero = False)(input_text)
-	# model = Bidirectional(LSTM(dim, return_sequences = True), merge_mode = "concat")(model)
-	# model = LeakyReLU(0.2)(model)
-	# if use_dropout:
-		# model = Dropout(0.2)(model)
-	# model = LSTM(dim, return_sequences = True)(model)
-	# model = LeakyReLU(0.2)(model)
-	# if use_dropout:
-		# model = Dropout(0.2)(model)
-	# model = LSTM(dim, return_sequences = False)(model)
-	# model = LeakyReLU(0.2)(model)
-	
-	# input_subreddit = Input(shape=(1,), dtype='int32', name='subreddit_input')
-	# sr_embedding = Embedding(n_subreddits, subreddit_dim, mask_zero = False)(input_subreddit)
-	# sr_flattened = Flatten()(sr_embedding)
-	# model = merge([sr_flattened, model], mode="concat", concat_axis = 1)
-	# if use_dropout:
-		# model = Dropout(0.2)(model)
-	# model = Dense(dim)(model)
-	# if use_dropout:
-		# model = Dropout(0.5)(model)
-	# model = LeakyReLU(0.2)(model)
-	# model = Dense(dim/2)(model)
-	# model = LeakyReLU(0.2)(model)
-	# if use_dropout:
-		# model = Dropout(0.5)(model)
-	# modelout = MaxoutDense(1, nb_feature = 5)(model)
-	# modelout = Activation("sigmoid")(modelout)
-	# model = Model(input = [input_text, input_subreddit], output = [modelout])
-	# model.compile(loss='binary_crossentropy',
-				  # optimizer='adam')
-				  
-	# return model
-	
 	
 def test(word_dim=512,  # word vector dimensionality
 		  dim=1024,  # the number of LSTM units
@@ -133,7 +120,8 @@ def test(word_dim=512,  # word vector dimensionality
 		  sr_dictionary="./reddit_comment_training.tsv_srdict.pkl",
 		  use_dropout=True,
 		  reload=True,
-		  overwrite=False):
+		  overwrite=False,
+		  modelfile = None):
 
 
 	test = PostmungedTextIterator(test_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False)
@@ -144,28 +132,35 @@ def test(word_dim=512,  # word vector dimensionality
 	
 	# Initializaton
 	
-	print "Attempting to load most recent model"
-	modelfiles = [(join(savedir, f), int(f.split(".")[-2].replace("iter", ""))) for f in listdir(savedir) if isfile(join(savedir, f)) and "model" in f and ".h5" in f]
-	most_recent_model = ("", 0)
-	for modelfile in modelfiles:
-		if modelfile[1] >= most_recent_model[1]:
-			most_recent_model = modelfile
-		
-	if os.path.isfile(most_recent_model[0]):
-		print "Loading from model", most_recent_model[0]
-		model.load_weights(most_recent_model[0])
+	if modelfile == None:
+		print "Attempting to load most recent model"
+		modelfiles = [(join(savedir, f), int(f.split(".")[-2].replace("iter", ""))) for f in listdir(savedir) if isfile(join(savedir, f)) and "model" in f and ".h5" in f]
+		most_recent_model = ("", 0)
+		for modelfile in modelfiles:
+			if modelfile[1] >= most_recent_model[1]:
+				most_recent_model = modelfile
+			
+		if os.path.isfile(most_recent_model[0]):
+			print "Loading from model", most_recent_model[0]
+			model.load_weights(most_recent_model[0])
+		else:
+			print "Failed to load model -- no acceptable models found"
 	else:
-		print "Failed to load model -- no acceptable models found"
-
+		model.load_weights(modelfile)
+	
 	true_negative = 0
 	true_positive = 0
-	false_negative =0
+	false_negative = 0
 	false_positive = 0
+	y_true_score = []
+	y_pred_score = []
 	for x, y in test:
 		x, y = prepare_data(x, y, maxlen = maxlen)
 		predictions = model.predict(x)
 		for pred, truth in zip(predictions, y):
 			pred = pred[0]
+			y_pred_score.append(pred)
+			y_true_score.append(truth)
 			if pred > 0.5:
 				pred = 1
 			else:
@@ -186,10 +181,44 @@ def test(word_dim=512,  # word vector dimensionality
 	percent_correct = 100.0*(num_correct + 0.0) / (num_incorrect + num_correct + 0.0)
 	precision = 100.0*(true_positive + 0.0) / (true_positive + false_positive + 0.0)
 	recall = 100.0*(true_positive + 0.0) / (true_positive + false_negative + 0.0)
+	print modelfile
 	print (str(percent_correct) + "% correct")
 	print (str(precision) + "% precision")
 	print (str(recall) + "% recall")
-		
+	
+	y_true_score = numpy.asarray(y_true_score)
+	y_pred_score = numpy.asarray(y_pred_score)
+	fpr, tpr, _ = roc_curve(y_true_score, y_pred_score)
+	roc_auc = auc(fpr, tpr)
+
+	plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % roc_auc)
+	plt.plot([0, 1], [0, 1], linestyle='--')
+	plt.xlim([0.0, 1.0])
+	plt.ylim([0.0, 1.05])
+	plt.xlabel('False Positive Rate')
+	plt.ylabel('True Positive Rate')
+	plt.title('ROC Curve')
+	plt.legend(loc="lower right")
+	plt.savefig(modelfile + "-ROC.png", bbox_inches = "tight")
+
+	precision, recall, _ = precision_recall_curve(y_true_score, y_pred_score)
+	pr_auc = auc(recall, precision)
+
+	plt.clf()
+	plt.plot(recall, precision, label='PR curve (area = %0.2f)' % pr_auc)
+	plt.plot([0, 1], [float(fp + tn) / (tp + fn + fp + tn), float(fp + tn) / (tp + fn + fp + tn)], linestyle='--')
+	plt.xlim([0.0, 1.0])
+	plt.ylim([0.0, 1.05])
+	plt.xlabel('Recall')
+	plt.ylabel('Precision')
+	plt.title('Precision-Recall Curve')
+	plt.legend(loc="upper right")
+	plt.savefig(modelfile + "-Precision-Recall.png", bbox_inches = "tight")
+	
+	
+	return percent_correct, precision, recall
+	
+	
 		
 if __name__ == '__main__':
-	test()	
+	generate_progress_graph("./", "./reddit_comment_valid.tsv", "./reddit_comment_training.tsv_worddict.pkl", "./reddit_comment_training.tsv_srdict.pkl",  "./reddit_comment_testing.tsv")
