@@ -60,7 +60,7 @@ def generate_progress_graph(model_directory, valid_dataset, dictionary, sr_dicti
 		tl.set_color('b')
 
 	plt.savefig("iterations_progress " + model_directory.split("/")[-2] + ".png", bbox_inches='tight')
-
+	plt.clf()
 
 
 
@@ -215,7 +215,7 @@ def test(word_dim=512,  # word vector dimensionality
 	plt.title('Precision-Recall Curve')
 	plt.legend(loc="upper right")
 	plt.savefig(modelfile + "-Precision-Recall.png", bbox_inches = "tight")
-	
+	plt.clf()
 	
 	return percent_correct, precision, recall
 	
