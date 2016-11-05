@@ -207,7 +207,7 @@ def test(word_dim=512,  # word vector dimensionality
 
 	plt.clf()
 	plt.plot(recall, precision, label='PR curve (area = %0.2f)' % pr_auc)
-	plt.plot([0, 1], [float(fp + tn) / (tp + fn + fp + tn), float(fp + tn) / (tp + fn + fp + tn)], linestyle='--')
+	plt.plot([0, 1], [float(false_positive + true_negative) / (true_positive + false_negative + false_positive + true_negative), float(false_positive + true_negative) / (true_positive + false_negative + false_positive + true_negative)], linestyle='--')
 	plt.xlim([0.0, 1.0])
 	plt.ylim([0.0, 1.05])
 	plt.xlabel('Recall')
