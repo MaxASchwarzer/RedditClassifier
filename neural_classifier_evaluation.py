@@ -39,14 +39,15 @@ def generate_progress_graph(model_directory, valid_dataset, dictionary, sr_dicti
 	
 	for model in modelfiles:
 		acc, prec, rec = test(modelfile = model, valid_dataset = valid_dataset, dictionary = dictionary, sr_dictionary = sr_dictionary, test_dataset = test_dataset)
-		acc.append(acc)
+		accs.append(acc)
 		precs.append(prec)
 		recs.append(rec)
 		
 		
 	with open(join(model_directory, "_training_results.csv"), "wb") as f:
-		for line in zip(*[iter, acc, prec, rec]):
-			line = ",".join(map(str, line))
+		f.write("iteration, accuracy, precision, recall \n")
+		for line in zip(*[iters, accs, precs, recs]):
+			line = ", ".join(map(str, line))
 			f.write(line + "\n")
 	fig, ax1 = plt.subplots()
 	t = np.asarray(iters)
@@ -99,18 +100,18 @@ def prepare_data(seqs_x, seqs_y, maxlen = None):
 	return [x_text, x_sr], seqs_y
 	
 	
-def test(word_dim=512,  # word vector dimensionality
-		  dim=1024,  # the number of LSTM units
-		  patience=10,  # early stopping patience
+def train(word_dim=256,  # word vector dimensionality
+		  dim=512,  # the number of LSTM units
+		  patience=2,  # early stopping patience
 		  max_epochs=5000,
 		  finish_after=10000000,  # finish after this many updates
 		  dispFreq=100,
 		  vocab_size=30000,  # vocabulary size
 		  n_subreddits = 8, # number of subreddits to track specifically
-		  subreddit_dim = 64, # subreddit vector dimensionality
+		  subreddit_dim = 128, # subreddit vector dimensionality
 		  maxlen=200,  # maximum length of the description
-		  batch_size=64,
-		  valid_batch_size=64,
+		  batch_size=96,
+		  valid_batch_size=96,
 		  savedir="./",
 		  validFreq=100000,
 		  saveFreq=25000,   # save the parameters after every saveFreq updates
@@ -121,8 +122,8 @@ def test(word_dim=512,  # word vector dimensionality
 		  sr_dictionary="./reddit_comment_training.tsv_srdict.pkl",
 		  use_dropout=True,
 		  reload=True,
-		  overwrite=False,
-		  modelfile = None):
+		  overwrite=False):
+
 
 
 	test = PostmungedTextIterator(test_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False)
@@ -192,6 +193,8 @@ def test(word_dim=512,  # word vector dimensionality
 	fpr, tpr, _ = roc_curve(y_true_score, y_pred_score)
 	roc_auc = auc(fpr, tpr)
 
+	
+	plt.clf()
 	plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % roc_auc)
 	plt.plot([0, 1], [0, 1], linestyle='--')
 	plt.xlim([0.0, 1.0])
