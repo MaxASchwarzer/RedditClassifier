@@ -122,7 +122,8 @@ def train(word_dim=256,  # word vector dimensionality
 		  sr_dictionary="./reddit_comment_training.tsv_srdict.pkl",
 		  use_dropout=True,
 		  reload=True,
-		  overwrite=False):
+		  overwrite=False，
+		  modelfile = None):
 
 
 

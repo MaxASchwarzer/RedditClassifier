@@ -233,7 +233,7 @@ def train(word_dim=256,  # word vector dimensionality
 				# save with uidx
 				print 'Saving the model at iteration {}...'.format(uidx),
 				saveto_uidx = join(savedir, 'model.iter{}.h5'.format(uidx))
-				model.save_weights(saveto_uidx)
+				model.save(saveto_uidx)
 				print 'Done'
 
 			# validate model on validation set and early stop if necessary
