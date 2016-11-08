@@ -14,7 +14,7 @@ def fopen(filename, mode='r'):
 		return gzip.open(filename, mode)
 	return open(filename, mode)
 
-def postmunge(source, source_dict, sr_dict, n_words_source=30000, n_subreddits = 1000):
+def postmunge(source, source_dict, sr_dict, n_words_source=30000, n_subreddits = 1000, legal_subreddits = None):
 	tokenizer = WordPunctTokenizer()
 	with open(source_dict, 'rb') as f:
 		source_dict = pkl.load(f)
@@ -30,6 +30,8 @@ def postmunge(source, source_dict, sr_dict, n_words_source=30000, n_subreddits =
 			for ss in f:
 				ss = ss.split("\t")
 				sssubreddit = ss[0]
+				if legal_subreddits != None and not sssubreddit.strip() in legal_subreddits:
+					continue
 				sstext = ss[1]
 				tt = ss[2]
 
@@ -59,9 +61,9 @@ class PostmungedTextIterator:
 	"""Simple text iterator.  IMPORTANT: do not set shuffle=True if the dataset is too large to load into memory"""
 	def __init__(self, source, source_dict, sr_dict,
 				 batch_size=128, #maxlen=100, maxlen is currently deprecated unless experimental data shows it is necessary
-				 n_words_source=-1, n_subreddits = 1000, shuffle = False, k = 100):
+				 n_words_source=-1, n_subreddits = 1000, shuffle = False, k = 100, legal_subreddits = None):
 		
-		postmunge(source, source_dict, sr_dict, n_words_source, n_subreddits)
+		postmunge(source, source_dict, sr_dict, n_words_source, n_subreddits, legal_subreddits)
 		self.source = fopen(source + ".postmunged", 'r')
 		self.source_name = source
 		

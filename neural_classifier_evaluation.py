@@ -50,10 +50,10 @@ def generate_progress_graph(model_directory, valid_dataset, dictionary, sr_dicti
 			line = ", ".join(map(str, line))
 			f.write(line + "\n")
 	fig, ax1 = plt.subplots()
-	t = np.asarray(iters)
-	ax1.plot(t, np.asarray(accs), 'b-', label="Accuracy")
-	ax1.plot(t, np.asarray(precs), 'g-', label="Precision")
-	ax1.plot(t, np.asarray(recs), 'k-', label="Recall")
+	t = numpy.asarray(iters)
+	ax1.plot(t, numpy.asarray(accs), 'b-', label="Accuracy")
+	ax1.plot(t, numpy.asarray(precs), 'g-', label="Precision")
+	ax1.plot(t, numpy.asarray(recs), 'k-', label="Recall")
 	ax1.set_xlabel('Number of Iterations')
 	# Make the y-axis label and tick labels match the line color.
 	ax1.set_ylabel('Percent score', color='b')
@@ -122,12 +122,13 @@ def train(word_dim=256,  # word vector dimensionality
 		  sr_dictionary="./reddit_comment_training.tsv_srdict.pkl",
 		  use_dropout=True,
 		  reload=True,
-		  overwrite=False，
+		  overwrite=False,
+		  legal_subreddits = ["science"],
 		  modelfile = None):
 
 
 
-	test = PostmungedTextIterator(test_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False)
+	test = PostmungedTextIterator(test_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False, legal_subreddits = legal_subreddits)
 	
 	print "Building the model"
 	model = build_model(dim = dim, word_dim  = word_dim, vocab_size = vocab_size, n_subreddits = n_subreddits, subreddit_dim = subreddit_dim, use_dropout = use_dropout)
@@ -145,11 +146,11 @@ def train(word_dim=256,  # word vector dimensionality
 			
 		if os.path.isfile(most_recent_model[0]):
 			print "Loading from model", most_recent_model[0]
-			model.load_weights(most_recent_model[0])
+			model = load_model(most_recent_model[0])
 		else:
 			print "Failed to load model -- no acceptable models found"
 	else:
-		model.load_weights(modelfile)
+		model = load_model(modelfile)
 	
 	true_negative = 0
 	true_positive = 0

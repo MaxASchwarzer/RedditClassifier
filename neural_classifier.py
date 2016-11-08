@@ -130,6 +130,7 @@ def train(word_dim=256,  # word vector dimensionality
 		  valid_dataset="./reddit_comment_valid.tsv",
 		  dictionary="./reddit_comment_training.tsv_worddict.pkl",
 		  sr_dictionary="./reddit_comment_training.tsv_srdict.pkl",
+		  legal_subreddits = ["science"],
 		  use_dropout=True,
 		  reload=True,
 		  overwrite=False):
@@ -138,8 +139,8 @@ def train(word_dim=256,  # word vector dimensionality
 	#class_weights = get_class_weights(dataset)
 	#print class_weights
 	# The dataset this model was built for is heavily unbalanced, so we generate weightings to equalize the importance of the classes.
-	train = PostmungedTextIterator(dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False)
-	valid = PostmungedTextIterator(valid_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False)
+	train = PostmungedTextIterator(dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False, legal_subreddits = legal_subreddits)
+	valid = PostmungedTextIterator(valid_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False, legal_subreddits = legal_subreddits)
 	
 	print "Building the model"
 	model = build_model(dim = dim, word_dim  = word_dim, vocab_size = vocab_size, n_subreddits = n_subreddits, subreddit_dim = subreddit_dim, use_dropout = use_dropout)
@@ -162,7 +163,7 @@ def train(word_dim=256,  # word vector dimensionality
 			
 		if os.path.isfile(most_recent_model[0]):
 			print "Loading from model", most_recent_model[0]
-			model = keras.models.load_model(most_recent_model[0])
+			model = load_model(most_recent_model[0])
 			uidx = most_recent_model[1] + 1  #Adding one avoids repeating a validation error calculation for many reloads.
 		else:
 			print "Failed to load model -- no acceptable models found"
