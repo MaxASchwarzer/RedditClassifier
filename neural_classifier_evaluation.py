@@ -12,24 +12,12 @@ from postmunge import PostmungedTextIterator
 from neural_classifier import build_model
 
 from keras.models import Graph, Sequential, load_model, Model
-# from keras.layers import Embedding, Dense, MaxoutDense, Input, merge, MaxoutDense, Flatten
-# from keras.layers.wrappers import TimeDistributed, Bidirectional
-# from keras.layers.core import Dropout, Activation
-# from keras.layers.recurrent import LSTM
-# from keras.layers.pooling import GlobalMaxPooling1D
-# from keras.optimizers import Nadam
-# from keras import backend as K
-# from keras.layers.advanced_activations import PReLU, LeakyReLU
-
 import matplotlib.pyplot as plt
 
 from sklearn.metrics import roc_curve, auc, precision_recall_curve
 
-# TODO: Add evaluation on the testing set.
-# WARNING: This code will barely run on CPU.  GPU use advised.
-
 def generate_progress_graph(model_directory, valid_dataset, dictionary, sr_dictionary, test_dataset):
-	modelfiles = [(join(model_directory, f), int(f.split(".")[1].replace("iter", ""))) for f in listdir(model_directory) if (isfile(join(model_directory, f)) and ("model" in str(f)) and (("npz" in str(f)) or ("h5" in str(f))) and (not "validout" in str(f)) and (not "testout" in str(f)) and (not ".pkl" in str(f)))]
+	modelfiles = [(join(model_directory, f), int(f.split(".")[1].replace("iter", ""))) for f in listdir(model_directory) if (isfile(join(model_directory, f)) and ("model" in str(f)) and (("npz" in str(f)) or ("h5" in str(f))) and (not "validout" in str(f)) and (not "testout" in str(f)) and (not ".pkl" in str(f)) and (not ".png" in str(f)))]
 	modelfiles = sorted(modelfiles, key = lambda file: file[1])
 	print modelfiles
 	modelfiles, iters = zip(*modelfiles)
@@ -60,7 +48,7 @@ def generate_progress_graph(model_directory, valid_dataset, dictionary, sr_dicti
 	for tl in ax1.get_yticklabels():
 		tl.set_color('b')
 
-	plt.savefig("iterations_progress " + model_directory.split("/")[-2] + ".png", bbox_inches='tight')
+	plt.savefig("iterations_progress.png", bbox_inches='tight')
 	plt.clf()
 
 
@@ -100,7 +88,7 @@ def prepare_data(seqs_x, seqs_y, maxlen = None):
 	return [x_text, x_sr], seqs_y
 	
 	
-def train(word_dim=256,  # word vector dimensionality
+def test(word_dim=256,  # word vector dimensionality
 		  dim=512,  # the number of LSTM units
 		  patience=2,  # early stopping patience
 		  max_epochs=5000,
@@ -131,7 +119,7 @@ def train(word_dim=256,  # word vector dimensionality
 	test = PostmungedTextIterator(test_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False, legal_subreddits = legal_subreddits)
 	
 	print "Building the model"
-	model = build_model(dim = dim, word_dim  = word_dim, vocab_size = vocab_size, n_subreddits = n_subreddits, subreddit_dim = subreddit_dim, use_dropout = use_dropout)
+	#model = build_model(dim = dim, word_dim  = word_dim, vocab_size = vocab_size, n_subreddits = n_subreddits, subreddit_dim = subreddit_dim, use_dropout = use_dropout)
 	print "Model built"
 	
 	# Initializaton
@@ -150,6 +138,7 @@ def train(word_dim=256,  # word vector dimensionality
 		else:
 			print "Failed to load model -- no acceptable models found"
 	else:
+		print "Loading from model "+ modelfile
 		model = load_model(modelfile)
 	
 	true_negative = 0
@@ -182,6 +171,13 @@ def train(word_dim=256,  # word vector dimensionality
 	
 	num_correct = true_negative + true_positive
 	num_incorrect = false_negative + false_positive
+	
+	# Avoid a crash in some edge cases where nothing was marked as positive
+	if (true_positive + false_positive) == 0:
+		false_positive += 1
+	if (true_positive + false_negative) == 0:
+		false_negative += 1
+		
 	percent_correct = 100.0*(num_correct + 0.0) / (num_incorrect + num_correct + 0.0)
 	precision = 100.0*(true_positive + 0.0) / (true_positive + false_positive + 0.0)
 	recall = 100.0*(true_positive + 0.0) / (true_positive + false_negative + 0.0)
