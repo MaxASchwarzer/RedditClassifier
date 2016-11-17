@@ -1,4 +1,3 @@
-
 import numpy
 import random
 import json
@@ -6,6 +5,7 @@ import json
 import cPickle as pkl
 import gzip
 from nltk.tokenize import WordPunctTokenizer
+from collections import OrderedDict
 
 
 
@@ -14,7 +14,7 @@ def fopen(filename, mode='r'):
 		return gzip.open(filename, mode)
 	return open(filename, mode)
 
-def postmunge(source, source_dict, sr_dict, n_words_source=30000, n_subreddits = 1000, legal_subreddits = None):
+def postmunge(source, source_dict, sr_dict, n_words_source=30000, n_subreddits = 1000, legal_subreddits = None, character_level = False):
 	tokenizer = WordPunctTokenizer()
 	with open(source_dict, 'rb') as f:
 		source_dict = pkl.load(f)
@@ -36,6 +36,8 @@ def postmunge(source, source_dict, sr_dict, n_words_source=30000, n_subreddits =
 				tt = ss[2]
 
 				sstext = tokenizer.tokenize(sstext)
+				if (character_level):
+					sstext = " ".join(sstext)
 				
 				sstext = [source_dict[w] if w in source_dict else 1 for w in sstext]
 				if n_words_source > 0:
@@ -61,9 +63,9 @@ class PostmungedTextIterator:
 	"""Simple text iterator.  IMPORTANT: do not set shuffle=True if the dataset is too large to load into memory"""
 	def __init__(self, source, source_dict, sr_dict,
 				 batch_size=128, #maxlen=100, maxlen is currently deprecated unless experimental data shows it is necessary
-				 n_words_source=-1, n_subreddits = 1000, shuffle = False, k = 100, legal_subreddits = None):
+				 n_words_source=-1, n_subreddits = 1000, shuffle = False, k = 100, legal_subreddits = None, character_level = False):
 		
-		postmunge(source, source_dict, sr_dict, n_words_source, n_subreddits, legal_subreddits)
+		postmunge(source, source_dict, sr_dict, n_words_source, n_subreddits, legal_subreddits, character_level)
 		self.source = fopen(source + ".postmunged", 'r')
 		self.source_name = source
 		
