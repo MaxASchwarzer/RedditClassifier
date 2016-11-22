@@ -9,7 +9,7 @@ from os import listdir
 from os.path import isfile, join
 
 from postmunge import PostmungedTextIterator
-from neural_classifier import build_model, prepare_data
+from neural_classifier_char_rnn import build_model, prepare_data
 
 from keras.models import Graph, Sequential, load_model, Model
 import matplotlib.pyplot as plt

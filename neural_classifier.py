@@ -132,7 +132,7 @@ def train(word_dim=256,  # word vector dimensionality
 		  sr_dictionary="./reddit_comment_training.tsv_srdict.pkl",
 		  legal_subreddits = ["science"],
 		  use_dropout=True,
-		  reload=True,
+		  reload=False,
 		  overwrite=False):
 
 
@@ -155,7 +155,7 @@ def train(word_dim=256,  # word vector dimensionality
 	
 	if (reload):
 		print "Attempting to reload"
-		modelfiles = [(join(savedir, f), int(f.split(".")[-2].replace("iter", ""))) for f in listdir(savedir) if isfile(join(savedir, f)) and "model" in f and ".h5" in f]
+		modelfiles = [(join(savedir, f), int(f.split(".")[-2].replace("iter", ""))) for f in listdir(savedir) if isfile(join(savedir, f)) and "model" in f and ".h5" in f and not ".png" in f]
 		most_recent_model = ("", 0)
 		for modelfile in modelfiles:
 			if modelfile[1] >= most_recent_model[1]:
