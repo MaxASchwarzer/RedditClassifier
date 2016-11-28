@@ -73,7 +73,6 @@ def get_class_weights(inputfile):
 	
 def build_model(dim=256, word_dim = 256, subreddit_dim = 64, vocab_size = 30000, n_subreddits = 1000, maxlen = None, use_dropout = False):
 	""" This network structure is based on Recurrent Convolutional Neural Networks for Text Classification, Lai et al., 2015, """	
-	
 	input_text = Input(shape=(None,vocab_size), dtype='float32', name='text_input')
 	model = Bidirectional(LSTM(dim, return_sequences = True), merge_mode = "concat")(input_text)
 	model = LeakyReLU(0.2)(model)
@@ -85,7 +84,6 @@ def build_model(dim=256, word_dim = 256, subreddit_dim = 64, vocab_size = 30000,
 		model = Dropout(0.2)(model)
 	model = GlobalMaxPooling1D()(model)
 	model = LeakyReLU(0.2)(model)
-	
 	input_subreddit = Input(shape=(1,), dtype='int32', name='subreddit_input')
 	sr_embedding = Embedding(n_subreddits, subreddit_dim, mask_zero = False)(input_subreddit)
 	sr_flattened = Flatten()(sr_embedding)
@@ -103,9 +101,7 @@ def build_model(dim=256, word_dim = 256, subreddit_dim = 64, vocab_size = 30000,
 	modelout = MaxoutDense(1, nb_feature = 5)(model)
 	modelout = Activation("sigmoid")(modelout)
 	model = Model(input = [input_text, input_subreddit], output = [modelout])
-	model.compile(loss='binary_crossentropy',
-				  optimizer='adam')
-				  
+	model.compile(loss='binary_crossentropy', optimizer='adam')
 	return model
 	
 	
@@ -129,15 +125,17 @@ def train(word_dim=256,  # word vector dimensionality
 		  valid_dataset="./reddit_comment_valid.tsv",
 		  dictionary="./reddit_comment_training.tsv_chardict.pkl",
 		  sr_dictionary="./reddit_comment_training.tsv_srdict.pkl",
-		  legal_subreddits = ["science"],
+		  legal_subreddits = None, #["science"],
 		  use_dropout=True,
 		  reload=False,
 		  overwrite=False):
 
 
-	#class_weights = get_class_weights(dataset)
-	#print class_weights
+	class_weights = get_class_weights(dataset)
+	print class_weights
 	# The dataset this model was built for is heavily unbalanced, so we generate weightings to equalize the importance of the classes.
+	
+	
 	train = PostmungedTextIterator(dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False, legal_subreddits = legal_subreddits, character_level = True)
 	valid = PostmungedTextIterator(valid_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False, legal_subreddits = legal_subreddits, character_level = True)
 	
@@ -184,7 +182,7 @@ def train(word_dim=256,  # word vector dimensionality
 				uidx -= 1
 				continue
 				
-			score = model.train_on_batch(x, y)#, class_weight = class_weights)
+			score = model.train_on_batch(x, y, class_weight = class_weights)
 			scores.append(score)
 			
 			# check for bad numbers; if one is encountered, just reload the model from the most recent save.  Dropout's randomness should ensure that this will

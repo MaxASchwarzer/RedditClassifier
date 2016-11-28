@@ -75,7 +75,7 @@ def test(word_dim=256,  # word vector dimensionality
 		  use_dropout=True,
 		  reload=True,
 		  overwrite=False,
-		  legal_subreddits = ["science"],
+		  legal_subreddits = None, # ["science"],
 		  modelfile = None):
 
 
