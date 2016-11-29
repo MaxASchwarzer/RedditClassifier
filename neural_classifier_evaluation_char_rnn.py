@@ -174,11 +174,11 @@ def test(word_dim=256,  # word vector dimensionality
 	plt.legend(loc="lower right")
 	plt.savefig(modelfile + "-ROC.png", bbox_inches = "tight")
 
-	precision, recall, _ = precision_recall_curve(y_true_score, y_pred_score)
-	pr_auc = auc(recall, precision)
+	new_precision, new_recall, _ = precision_recall_curve(y_true_score, y_pred_score)
+	pr_auc = auc(new_recall, new_precision)
 
 	plt.clf()
-	plt.plot(recall, precision, label='PR curve (area = %0.2f)' % pr_auc)
+	plt.plot(new_recall, new_precision, label='PR curve (area = %0.2f)' % pr_auc)
 	plt.plot([0, 1], [float(false_positive + true_negative) / (true_positive + false_negative + false_positive + true_negative), float(false_positive + true_negative) / (true_positive + false_negative + false_positive + true_negative)], linestyle='--')
 	plt.xlim([0.0, 1.0])
 	plt.ylim([0.0, 1.05])
