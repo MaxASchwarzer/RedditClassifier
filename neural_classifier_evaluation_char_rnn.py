@@ -39,8 +39,11 @@ def generate_progress_graph(model_directory, valid_dataset, dictionary, sr_dicti
 			f.write(line + "\n")
 	fig, ax1 = plt.subplots()
 	t = numpy.asarray(iters)
+	print accs
 	ax1.plot(t, numpy.asarray(accs), 'b-', label="Accuracy")
+	print precs
 	ax1.plot(t, numpy.asarray(precs), 'g-', label="Precision")
+	print recs
 	ax1.plot(t, numpy.asarray(recs), 'k-', label="Recall")
 	ax1.set_xlabel('Number of Iterations')
 	# Make the y-axis label and tick labels match the line color.
@@ -152,6 +155,7 @@ def test(word_dim=256,  # word vector dimensionality
 	print (str(percent_correct) + "% correct")
 	print (str(precision) + "% precision")
 	print (str(recall) + "% recall")
+	print (str(100 * (true_positive + false_positive) / (num_correct + num_incorrect)) + "% predicted to be removed")
 	
 	y_true_score = numpy.asarray(y_true_score)
 	y_pred_score = numpy.asarray(y_pred_score)
