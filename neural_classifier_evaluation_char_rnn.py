@@ -111,10 +111,10 @@ def test(word_dim=256,  # word vector dimensionality
 		print "Loading from model "+ modelfile
 		model = load_model(modelfile)
 	
-	true_negative = 0
-	true_positive = 0
-	false_negative = 0
-	false_positive = 0
+	true_negative = 0.
+	true_positive = 0.
+	false_negative = 0.
+	false_positive = 0.
 	y_true_score = []
 	y_pred_score = []
 	for x, y in test:
