@@ -129,6 +129,7 @@ def test(word_dim=256,  # word vector dimensionality
 	
 	num_correct = true_negative + true_positive
 	num_incorrect = false_negative + false_positive
+
 	
 	# Avoid a crash in some edge cases where nothing was marked as positive
 	if (true_positive + false_positive) == 0:
@@ -177,6 +178,47 @@ def test(word_dim=256,  # word vector dimensionality
 	plt.savefig(modelfile + "-Precision-Recall.png", bbox_inches = "tight")
 	plt.clf()
 	
+
+	results = zip(y_pred_score, y_true_score)
+	sorted_results = sorted(results, key = lambda x: x[0])
+	
+	candidates = []
+	total_positive = true_positive + false_negative
+	total_negative = false_positive + true_negative
+	
+	pred_removed = 0 
+	pred_kept = total_negative + total_positive
+	
+	true_negative = total_negative
+	true_positive = 0.
+	false_negative = total_positive
+	false_positive = 0.
+	
+	best_recall = (-100., -100., -100.)
+	best_precision = (-100., -100., -100.)
+	
+	for (pred, truth) in sorted_results:
+			if truth == 0:
+				true_negative -= 1
+				false_positive += 1
+			elif truth == 1:
+				true_positive += 1
+				false_negative -= 1
+				
+			if true_positive / (true_positive + false_negative) > 0.95 and true_positive/(false_negative + true_positive) > best_recall[0]:
+				best_recall = ((pred, true_positive / (true_positive + false_negative), true_positive/(false_negative + true_positive)))
+			
+			if true_positive / (true_positive + false_negative) > best_precision[1]:
+				best_precision = (pred, true_positive / (true_positive + false_negative), true_positive/(false_negative + true_positive))
+				
+			
+	if best_recall == (-100., -100., -100.):
+		print "No thresholds had a precision above 0.95"
+	else:
+		print "Best threshold was: {}, with precision of {}% and recall of {}%".format(best_recall[0], 100.0 *  best_recall[1], 100.0 *  best_recall[2])
+	
+	print "Highest precision achieved at threshold {}, with precision of {}% and recall of {}%".format(best_precision[0], best_precision[1]*100, best_precision[2]*100)
+				
 	return percent_correct, precision, recall
 	
 	
