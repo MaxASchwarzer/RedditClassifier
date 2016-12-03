@@ -71,14 +71,14 @@ def get_class_weights(inputfile):
 	return {0 : 1, 1 : class1/class2}
 	
 	
-def build_model(dim=256, word_dim = 256, subreddit_dim = 64, vocab_size = 30000, n_subreddits = 1000, maxlen = None, use_dropout = False):
+def build_model(dim=256, subreddit_dim = 64, vocab_size = 30000, n_subreddits = 1000, maxlen = None, use_dropout = False):
 	""" This network structure is based on Recurrent Convolutional Neural Networks for Text Classification, Lai et al., 2015, """	
 	input_text = Input(shape=(None,vocab_size), dtype='float32', name='text_input')
-	model = Bidirectional(LSTM(dim, return_sequences = True), merge_mode = "concat")(input_text)
+	model = LSTM(dim, return_sequences = True)(input_text)
 	model = LeakyReLU(0.2)(model)
 	if use_dropout:
 		model = Dropout(0.2)(model)
-	model = Bidirectional(LSTM(dim, return_sequences = True), merge_mode = "concat")(model)
+	model = LSTM(dim, return_sequences = True)(model)
 	model = LeakyReLU(0.2)(model)
 	if use_dropout:
 		model = Dropout(0.2)(model)
@@ -105,8 +105,7 @@ def build_model(dim=256, word_dim = 256, subreddit_dim = 64, vocab_size = 30000,
 	return model
 	
 	
-def train(word_dim=256,  # word vector dimensionality
-		  dim=512,  # the number of LSTM units
+def train(dim=1024,  # the number of LSTM units
 		  patience=2,  # early stopping patience
 		  max_epochs=5000,
 		  finish_after=10000000,  # finish after this many updates
@@ -144,7 +143,7 @@ def train(word_dim=256,  # word vector dimensionality
 	vocab_size = len(dict.keys())	
 	
 	print "Building the model"
-	model = build_model(dim = dim, word_dim  = word_dim, vocab_size = vocab_size, n_subreddits = n_subreddits, subreddit_dim = subreddit_dim, use_dropout = use_dropout)
+	model = build_model(dim = dim, vocab_size = vocab_size, n_subreddits = n_subreddits, subreddit_dim = subreddit_dim, use_dropout = use_dropout)
 	print "Model built"
 	
 	# Initializaton

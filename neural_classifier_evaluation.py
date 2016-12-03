@@ -9,9 +9,9 @@ from os import listdir
 from os.path import isfile, join
 
 from postmunge import PostmungedTextIterator
-from neural_classifier import build_model
+from neural_classifier import build_model, prepare_data
 
-from keras.models import Graph, Sequential, load_model, Model
+from keras.models import Sequential, load_model, Model
 import matplotlib.pyplot as plt
 
 from sklearn.metrics import roc_curve, auc, precision_recall_curve
@@ -50,43 +50,6 @@ def generate_progress_graph(model_directory, valid_dataset, dictionary, sr_dicti
 
 	plt.savefig("iterations_progress.png", bbox_inches='tight')
 	plt.clf()
-
-
-
-def prepare_data(seqs_x, seqs_y, maxlen = None):
-	# x: a list of sentences
-	lengths_x = [len(s[0]) for s in seqs_x]
-	
-	# Currently will never happen, but may be reinstated
-	if maxlen is not None:
-		new_seqs_x = []
-		new_lengths_x = []
-		for l_x, s_x in zip(lengths_x, seqs_x):
-			if l_x < maxlen:
-				new_seqs_x.append(s_x)
-				new_lengths_x.append(l_x)
-			else:
-				new_seqs_x.append((s_x[0][:maxlen], s_x[1]))
-				new_lengths_x.append(maxlen)
-				
-		lengths_x = new_lengths_x
-		seqs_x = new_seqs_x
-		if len(lengths_x) < 1:
-			return None, None
-
-	n_samples = len(seqs_x)
-	maxlen_x = numpy.max(lengths_x) + 1
-	
-	seqs_y = numpy.asarray(seqs_y)
-	
-	x_text = numpy.zeros((n_samples, maxlen_x)).astype('int32')
-	x_sr = numpy.zeros((n_samples)).astype("int32")
-	
-	for idx, s_x in enumerate(seqs_x):
-		x_text[idx, :lengths_x[idx]] = s_x[0]
-		x_sr[idx] = s_x[1]
-	return [x_text, x_sr], seqs_y
-	
 	
 def test(word_dim=256,  # word vector dimensionality
 		  dim=512,  # the number of LSTM units
@@ -111,18 +74,13 @@ def test(word_dim=256,  # word vector dimensionality
 		  use_dropout=True,
 		  reload=True,
 		  overwrite=False,
-		  legal_subreddits = ["science"],
+		  legal_subreddits = None, #["science"],
 		  modelfile = None):
 
 
 
 	test = PostmungedTextIterator(test_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False, legal_subreddits = legal_subreddits)
 	
-	print "Building the model"
-	#model = build_model(dim = dim, word_dim  = word_dim, vocab_size = vocab_size, n_subreddits = n_subreddits, subreddit_dim = subreddit_dim, use_dropout = use_dropout)
-	print "Model built"
-	
-	# Initializaton
 	
 	if modelfile == None:
 		print "Attempting to load most recent model"
@@ -141,10 +99,10 @@ def test(word_dim=256,  # word vector dimensionality
 		print "Loading from model "+ modelfile
 		model = load_model(modelfile)
 	
-	true_negative = 0
-	true_positive = 0
-	false_negative = 0
-	false_positive = 0
+	true_negative = 0.
+	true_positive = 0.
+	false_negative = 0.
+	false_positive = 0.
 	y_true_score = []
 	y_pred_score = []
 	for x, y in test:
@@ -185,6 +143,7 @@ def test(word_dim=256,  # word vector dimensionality
 	print (str(percent_correct) + "% correct")
 	print (str(precision) + "% precision")
 	print (str(recall) + "% recall")
+	print (str(100 * (true_positive + false_positive) / (num_correct + num_incorrect)) + "% predicted to be removed")
 	
 	y_true_score = numpy.asarray(y_true_score)
 	y_pred_score = numpy.asarray(y_pred_score)
@@ -203,11 +162,11 @@ def test(word_dim=256,  # word vector dimensionality
 	plt.legend(loc="lower right")
 	plt.savefig(modelfile + "-ROC.png", bbox_inches = "tight")
 
-	precision, recall, _ = precision_recall_curve(y_true_score, y_pred_score)
-	pr_auc = auc(recall, precision)
+	new_precision, new_recall, _ = precision_recall_curve(y_true_score, y_pred_score)
+	pr_auc = auc(new_recall, new_precision)
 
 	plt.clf()
-	plt.plot(recall, precision, label='PR curve (area = %0.2f)' % pr_auc)
+	plt.plot(new_recall, new_precision, label='PR curve (area = %0.2f)' % pr_auc)
 	plt.plot([0, 1], [float(false_positive + true_negative) / (true_positive + false_negative + false_positive + true_negative), float(false_positive + true_negative) / (true_positive + false_negative + false_positive + true_negative)], linestyle='--')
 	plt.xlim([0.0, 1.0])
 	plt.ylim([0.0, 1.05])
@@ -219,6 +178,7 @@ def test(word_dim=256,  # word vector dimensionality
 	plt.clf()
 	
 	return percent_correct, precision, recall
+	
 	
 	
 		

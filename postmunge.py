@@ -29,35 +29,41 @@ def postmunge(source, source_dict, sr_dict, n_words_source=30000, n_subreddits =
 		with open(source + ".postmunged", "wb") as g:
 			for ss in f:
 				ss = ss.split("\t")
-				sssubreddit = ss[0]
-				if legal_subreddits != None and not sssubreddit.strip() in legal_subreddits:
+				subreddit = ss[0]
+				if legal_subreddits != None and not subreddit.strip() in legal_subreddits:
 					continue
-				sstext = ss[1]
+				text = ss[1]
 				tt = ss[2]
+				parent = ss[3]
 
-				sstext = tokenizer.tokenize(sstext)
+				text = tokenizer.tokenize(text)
+				parent = tokenizer.tokenize(parent)
 				if (character_level):
-					sstext = " ".join(sstext)
-				
-				sstext = [source_dict[w] if w in source_dict else 1 for w in sstext]
+					text = " ".join(text)
+					parent = " ".join(parent)
+				text = [source_dict[w] if w in source_dict else 1 for w in text]
+				parent = [source_dict[w] if w in source_dict else 1 for w in parent]
 				if n_words_source > 0:
-					sstext = [w if w < n_words_source else 0 for w in sstext]
-
+					text = [w if w < n_words_source else 0 for w in text]
+					parent = [w if w < n_words_source else 0 for w in parent]
+					
 				if ss[1] in sr_dict:
-					sssubreddit = sr_dict[ss[1]]
+					subreddit = sr_dict[ss[1]]
 				else:
-					sssubreddit = 0
+					subreddit = 0
 
-				if n_subreddits > 0 and (sssubreddit + 1) > n_subreddits:
-					sssubreddit = 0
+				if n_subreddits > 0 and (subreddit + 1) > n_subreddits:
+					subreddit = 0
 					
 				if "removecomment" in tt:
 					tt = 1
 				else:
 					tt = 0
 				
-				sstext = str(sstext).replace(",", "")[1:-1] #ditch the brackets and commas
-				g.write(str(sssubreddit) + "\t" + sstext + "\t" + str(tt) + "\n")
+				printable_text = " ".join(map(str, text))
+				printable_parent = " ".join(map(str, parent))
+				#text = str(text).replace(",", "")[1:-1] #ditch the brackets and commas
+				g.write(str(subreddit) + "\t" + printable_text + "\t" + str(tt) + "\t" + printable_parent + "\n")
 				
 class PostmungedTextIterator:
 	"""Simple text iterator.  IMPORTANT: do not set shuffle=True if the dataset is too large to load into memory"""
@@ -130,15 +136,16 @@ class PostmungedTextIterator:
 					break
 				
 				ss = ss.split("\t")
-				sssubreddit = ss[0]
-				sstext = ss[1]
+				subreddit = ss[0]
+				text = ss[1]
 				tt = ss[2]
+				parent = ss[3]
 
-				self.source_buffer.append([sstext, sssubreddit])
+				self.source_buffer.append([text, subreddit, parent])
 				self.target_buffer.append(tt)
 
 			# sort source buffer on length
-			slen = numpy.array([len(t[0]) for t in self.source_buffer])
+			slen = numpy.array([len(t[0]) + len(t[2]) for t in self.source_buffer])
 			sidx = slen.argsort()
 
 			_sbuf = [self.source_buffer[i] for i in sidx]
@@ -163,10 +170,11 @@ class PostmungedTextIterator:
 					tt = self.target_buffer.pop()
 				except IndexError:
 					break
-				sstext = [int(x) for x in ss[0].strip().split()]
-				sssubreddit = int(ss[1])
+				text = [int(x) for x in ss[0].strip().split()]
+				parent = [int(x) for x in ss[2].strip().split()]
+				subreddit = int(ss[1])
 				tt = int(tt.strip())
-				source.append([sstext, sssubreddit])
+				source.append([text, subreddit, parent])
 				target.append(tt)
 
 				if len(source) >= self.batch_size:

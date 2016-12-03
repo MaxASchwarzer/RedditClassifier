@@ -88,10 +88,6 @@ def test(word_dim=256,  # word vector dimensionality
     
 	test = PostmungedTextIterator(test_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False, legal_subreddits = legal_subreddits, character_level = True)
 	
-	print "Building the model"
-	#model = build_model(dim = dim, word_dim  = word_dim, vocab_size = vocab_size, n_subreddits = n_subreddits, subreddit_dim = subreddit_dim, use_dropout = use_dropout)
-	print "Model built"
-	
 	# Initializaton
 	
 	if modelfile == None:
