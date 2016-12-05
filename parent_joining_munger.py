@@ -3,8 +3,9 @@ from nltk.tokenize import WordPunctTokenizer
 import pandas as pd
 import numpy as np
 import copy
+import ipdb
 
-df1 = pd.read_csv("./comments.tsv", "\t", header = None, names = ["uid1", "subreddit", "uid2", "postid", "parentid", "threadid", "text"])
+df1 = pd.read_csv("./comments.tsv", "\t", header = None, names = ["uid1", "subreddit", "uid2", "postid", "threadid", "parentid", "text"])
 df2 = pd.read_csv("./actions.tsv", "\t", header = None, names = ["action", "timestamp", "postid", "subreddit", "is_automod"])
 
 # delete unused data
@@ -23,13 +24,13 @@ unique_sorted_joined_table = df3.reindex(np.random.permutation(df3.index))
 
 processed_table = unique_sorted_joined_table.fillna(value={"action":"approvecomment", "text":"<EMPTY>"})
 processed_table_copy_with_only_body_and_comment_fullname = copy.deepcopy(processed_table)[["postid","text"]]
+
 processed_table = processed_table.merge(processed_table_copy_with_only_body_and_comment_fullname, how="left", left_on="parentid", right_on="postid")
 processed_table.rename(columns={'text_x': 'text', "postid_x": "postid"}, inplace=True)
 del processed_table ["postid_y"]
 del processed_table ["postid"]
 del processed_table ["parentid"]
 processed_table = processed_table.fillna(value={"text_y":"No Parent"})
-print processed_table
 
 
 # tokenize and lowercase the data
