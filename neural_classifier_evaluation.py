@@ -60,7 +60,7 @@ def test(word_dim=256,  # word vector dimensionality
 		  vocab_size=30000,  # vocabulary size
 		  n_subreddits = 8, # number of subreddits to track specifically
 		  subreddit_dim = 128, # subreddit vector dimensionality
-		  maxlen=200,  # maximum length of the description
+		  maxlen=300,  # maximum length of the description
 		  batch_size=96,
 		  valid_batch_size=96,
 		  savedir="./",
@@ -79,8 +79,9 @@ def test(word_dim=256,  # word vector dimensionality
 
 
 
-	test = PostmungedTextIterator(test_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False, legal_subreddits = legal_subreddits)
+	test = PostmungedTextIterator(test_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False, legal_subreddits = legal_subreddits, maxlen = maxlen)
 	
+	#model = build_model(dim = dim, word_dim  = word_dim, vocab_size = vocab_size, n_subreddits = n_subreddits, subreddit_dim = subreddit_dim, use_dropout = use_dropout)
 	
 	if modelfile == None:
 		print "Attempting to load most recent model"
@@ -106,8 +107,8 @@ def test(word_dim=256,  # word vector dimensionality
 	y_true_score = []
 	y_pred_score = []
 	for x, y in test:
-		x, y = prepare_data(x, y, maxlen = maxlen)
-		predictions = model.predict(x)
+		x, y = prepare_data(x, y, maxlen = maxlen, batch_size = batch_size)
+		predictions = model.predict(x, batch_size = len(x[0]))
 		for pred, truth in zip(predictions, y):
 			pred = pred[0]
 			y_pred_score.append(pred)

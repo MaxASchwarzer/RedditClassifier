@@ -68,12 +68,13 @@ def postmunge(source, source_dict, sr_dict, n_words_source=30000, n_subreddits =
 class PostmungedTextIterator:
 	"""Simple text iterator.  IMPORTANT: do not set shuffle=True if the dataset is too large to load into memory"""
 	def __init__(self, source, source_dict, sr_dict,
-				 batch_size=128, #maxlen=100, maxlen is currently deprecated unless experimental data shows it is necessary
+				 batch_size=128, maxlen=100,
 				 n_words_source=-1, n_subreddits = 1000, shuffle = False, k = 100, legal_subreddits = None, character_level = False):
 		
 		postmunge(source, source_dict, sr_dict, n_words_source, n_subreddits, legal_subreddits, character_level)
 		self.source = fopen(source + ".postmunged", 'r')
 		self.source_name = source
+		self.maxlen = maxlen
 		
 		self.shuffling = shuffle
 		if self.shuffling:
@@ -162,6 +163,10 @@ class PostmungedTextIterator:
 		try:
 
 			# actual work here
+				
+			max_body_len = 0
+			max_par_len = 0
+			
 			while True:
 
 				# read from source buffer and map to word index
@@ -172,12 +177,16 @@ class PostmungedTextIterator:
 					break
 				text = [int(x) for x in ss[0].strip().split()]
 				parent = [int(x) for x in ss[2].strip().split()]
+				
+				max_body_len = max(len(text), max_body_len)
+				max_par_len = max(len(parent), max_par_len)
+				
 				subreddit = int(ss[1])
 				tt = int(tt.strip())
 				source.append([text, subreddit, parent])
 				target.append(tt)
 
-				if len(source) >= self.batch_size:
+				if len(source)*(max_body_len + max_par_len) >= self.batch_size*self.maxlen:
 					break
 					
 		except IOError:

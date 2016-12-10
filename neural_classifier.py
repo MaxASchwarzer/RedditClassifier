@@ -23,20 +23,39 @@ from keras.layers.advanced_activations import PReLU, LeakyReLU
 # TODO: Add evaluation on the testing set.
 # WARNING: This code will barely run on CPU.  GPU use advised.
 
-def prepare_data(seqs_x, seqs_y, maxlen = None, class_weights = [1, 1]):
+def prepare_data(seqs_x, seqs_y, maxlen = None, class_weights = [1, 1], batch_size = 32):
 	# x: a list of sentences
 	lengths_x = [(len(s[0]), len(s[2])) for s in seqs_x]
+
 	
 	if maxlen is not None:
+	
+		maxlen = (batch_size*maxlen)/len(seqs_x)
+		
+		post_lengths = map(lambda x : x[0], lengths_x)
+		parent_lengths = map(lambda x : x[1], lengths_x)
+		maxlen_post = numpy.max(post_lengths) + 1
+		maxlen_parent = numpy.max(parent_lengths) + 1
+
+		if maxlen_post < maxlen / 2:
+			maxlen_parent = maxlen - maxlen_post 
+		elif maxlen_parent < maxlen / 2:
+			maxlen_post = maxlen - maxlen_parent
+		
+		else:
+			maxlen_post = maxlen / 2 + 1
+			maxlen_parent = maxlen / 2 + 1
+	
+	
 		new_seqs_x = []
 		new_lengths_x = []
 		for (l_x1, l_x2), s_x in zip(lengths_x, seqs_x):
-			if l_x1 < maxlen/2 and l_x2 < maxlen/2:
+			if l_x1 < maxlen_post and l_x2 < maxlen_parent:
 				new_seqs_x.append(s_x)
 				new_lengths_x.append((l_x1, l_x2))
 			else:
-				new_text_length = min(maxlen/2, l_x1)
-				new_parent_length = min(maxlen/2, l_x2)
+				new_text_length = min(maxlen_post, l_x1)
+				new_parent_length = min(maxlen_parent, l_x2)
 				new_seqs_x.append((s_x[0][:new_text_length], s_x[1], s_x[2][:new_parent_length]))
 				new_lengths_x.append((new_text_length, new_parent_length))
 				
@@ -137,7 +156,7 @@ def train(word_dim=256,  # word vector dimensionality
 		  vocab_size=30000,  # vocabulary size
 		  n_subreddits = 8, # number of subreddits to track specifically
 		  subreddit_dim = 128, # subreddit vector dimensionality
-		  maxlen=200,  # maximum length of the description
+		  maxlen=300,  # maximum length of the description
 		  batch_size=96,
 		  valid_batch_size=96,
 		  savedir="./",
@@ -157,8 +176,8 @@ def train(word_dim=256,  # word vector dimensionality
 	#class_weights = get_class_weights(dataset)
 	#print class_weights
 	# The dataset this model was built for is heavily unbalanced, so we generate weightings to equalize the importance of the classes.
-	train = PostmungedTextIterator(dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False, legal_subreddits = legal_subreddits)
-	valid = PostmungedTextIterator(valid_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False, legal_subreddits = legal_subreddits)
+	train = PostmungedTextIterator(dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False, legal_subreddits = legal_subreddits, maxlen = maxlen)
+	valid = PostmungedTextIterator(valid_dataset, dictionary, sr_dictionary, n_words_source=vocab_size, n_subreddits = n_subreddits, batch_size=batch_size, shuffle = False, legal_subreddits = legal_subreddits, maxlen = maxlen)
 	
 	print "Building the model"
 	model = build_model(dim = dim, word_dim  = word_dim, vocab_size = vocab_size, n_subreddits = n_subreddits, subreddit_dim = subreddit_dim, use_dropout = use_dropout)
@@ -262,7 +281,7 @@ def train(word_dim=256,  # word vector dimensionality
 				valid_errs = []
 				for x, y in valid:
 					x, y = prepare_data(x, y, maxlen = maxlen)
-					v_err = model.evaluate(x, y, batch_size = batch_size)
+					v_err = model.evaluate(x, y, batch_size = len(x[0]))
 					valid_errs.append(v_err)
 				valid_err = numpy.mean(valid_errs)
 				history_errs.append(valid_err)
@@ -293,9 +312,9 @@ def train(word_dim=256,  # word vector dimensionality
 	valid_errs = []
 	for x, y in valid:
 		x, y = prepare_data(x, y)
-		v_err = model.evaluate(x, y)
+		v_err = model.evaluate(x, y, batch_size = len(x[0]))
 		valid_errs.append(v_err)
-	valid_err = valid_errs.mean()
+	valid_err = numpy.mean(valid_errs)
 	print 'Valid ', valid_err
 	model.save(savedir + "final.h5")
 	return valid_err
