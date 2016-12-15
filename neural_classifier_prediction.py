@@ -48,7 +48,7 @@ def preprocess_data(input, sr_dictionary, word_dictionary, vocab_size = 30000, n
 			subreddit = 0
 		if not vocab_size is None:
 			text = [w if w < vocab_size else 0 for w in text]
-			text = [w if w < vocab_size else 0 for w in parent]
+			parent = [w if w < vocab_size else 0 for w in parent]
 
 		if n_subreddits > 0 and (subreddit + 1) > n_subreddits:
 			subreddit = 0
@@ -58,6 +58,8 @@ def preprocess_data(input, sr_dictionary, word_dictionary, vocab_size = 30000, n
 			tt = 1
 		else:
 			tt = 0	
+			
+		print text
 		x.append([text, subreddit, parent])
 		y.append(tt)
 		
