@@ -95,8 +95,8 @@ def predict(word_dim=256,  # word vector dimensionality
 	print originals
 	print "Attempting to load most recent model"
 	modelfiles = [(join(model_directory, f), int(f.split(".")[1].replace("iter", ""))) for f in listdir(model_directory) if (isfile(join(model_directory, f)) and ("model" in str(f)) and (("npz" in str(f)) or ("h5" in str(f))) and (not "validout" in str(f)) and (not "testout" in str(f)) and (not ".pkl" in str(f)) and (not ".png" in str(f)))]
-	modelfiles = sorted(modelfiles, lambda x: x[1])
-	most_recent_model = modelfiles[0]
+	modelfiles = sorted(modelfiles, key = lambda x: x[1])
+	most_recent_model = modelfiles[-1]
 		
 	if os.path.isfile(most_recent_model[0]):
 		print "Loading from model", most_recent_model[0]
