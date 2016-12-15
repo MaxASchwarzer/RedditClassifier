@@ -69,7 +69,8 @@ class PostmungedTextIterator:
 	"""Simple text iterator.  IMPORTANT: do not set shuffle=True if the dataset is too large to load into memory"""
 	def __init__(self, source, source_dict, sr_dict,
 				 batch_size=128, maxlen=100,
-				 n_words_source=-1, n_subreddits = 1000, shuffle = False, k = 100, legal_subreddits = None, character_level = False):
+				 n_words_source=-1, n_subreddits = 1000, shuffle = False,
+				 k = 100, legal_subreddits = None, character_level = False, sort = True):
 		
 		postmunge(source, source_dict, sr_dict, n_words_source, n_subreddits, legal_subreddits, character_level)
 		self.source = fopen(source + ".postmunged", 'r')
@@ -146,14 +147,15 @@ class PostmungedTextIterator:
 				self.target_buffer.append(tt)
 
 			# sort source buffer on length
-			slen = numpy.array([len(t[0]) + len(t[2]) for t in self.source_buffer])
-			sidx = slen.argsort()
+			if sort:
+				slen = numpy.array([len(t[0]) + len(t[2]) for t in self.source_buffer])
+				sidx = slen.argsort()
 
-			_sbuf = [self.source_buffer[i] for i in sidx]
-			_tbuf = [self.target_buffer[i] for i in sidx]
+				_sbuf = [self.source_buffer[i] for i in sidx]
+				_tbuf = [self.target_buffer[i] for i in sidx]
 
-			self.source_buffer = _sbuf
-			self.target_buffer = _tbuf
+				self.source_buffer = _sbuf
+				self.target_buffer = _tbuf
 
 		if len(self.source_buffer) == 0 or len(self.target_buffer) == 0:
 			self.end_of_data = False

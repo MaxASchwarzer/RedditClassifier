@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 
 from sklearn.metrics import roc_curve, auc, precision_recall_curve
 
+
 def generate_progress_graph(model_directory, valid_dataset, dictionary, sr_dictionary, test_dataset):
 	modelfiles = [(join(model_directory, f), int(f.split(".")[1].replace("iter", ""))) for f in listdir(model_directory) if (isfile(join(model_directory, f)) and ("model" in str(f)) and (("npz" in str(f)) or ("h5" in str(f))) and (not "validout" in str(f)) and (not "testout" in str(f)) and (not ".pkl" in str(f)) and (not ".png" in str(f)))]
 	modelfiles = sorted(modelfiles, key = lambda file: file[1])
